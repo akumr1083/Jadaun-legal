@@ -300,7 +300,8 @@
      Submissions are posted to Web3Forms, which emails the firm and can
      forward to a Google Sheet, Slack, Telegram, etc. Paste the access key
      into the hidden `access_key` field in index.html. Until a key is set,
-     the form falls back to Gmail's compose window in a new browser tab.
+     the form falls back to `mailto:`, which opens whatever mail handler the
+     visitor has configured in their browser or operating system.
 
      Swapping providers (Formspree, Netlify Forms, your own endpoint) only
      needs a different ENDPOINT and payload below.
@@ -345,23 +346,13 @@
         String(data.get("message") || ""),
       ].join("\n");
 
-      const params = new URLSearchParams({
-        view: "cm",
-        fs: "1",
-        to: FALLBACK_EMAIL,
-        su: subject,
-        body: body,
-      });
-      const url = "https://mail.google.com/mail/?" + params.toString();
-
-      setStatus("Opening Gmail with these details — review the message and press Send there.");
-
-      const compose = window.open(url, "_blank");
-      if (compose) {
-        compose.opener = null;
-      } else {
-        window.location.href = url;
-      }
+      setStatus(
+        "Opening your mail app with these details — review the message and send it from there."
+      );
+      window.location.href =
+        "mailto:" + FALLBACK_EMAIL +
+        "?subject=" + encodeURIComponent(subject) +
+        "&body=" + encodeURIComponent(body);
     }
 
     form.addEventListener("submit", async (event) => {
