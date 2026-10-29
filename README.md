@@ -127,8 +127,8 @@ Images in `assets/img/`:
 
 1. **Contact form — access key** — the form already posts to Web3Forms, but
    `index.html` still contains the placeholder `YOUR-WEB3FORMS-ACCESS-KEY`. Until
-   a real key is pasted in, the form falls back to the visitor's default mail
-   app. See *Bookings and notifications* below.
+   a real key is pasted in, the form offers Gmail, Outlook or the visitor's
+   default mail app. See *Bookings and notifications* below.
 2. **Portraits** — the founder plate and the five team cards already use the
    practice's own images. To swap one, replace the file in `assets/img/` with the
    same aspect ratio (4:5 for portraits) and keep the `width`/`height`
@@ -158,9 +158,11 @@ each submission to one or more email inboxes. Setup, about five minutes:
 3. Redeploy. Submit a test enquiry while logged into the inbox — it arrives
    within seconds and Web3Forms shows the sender's IP and spam score.
 
-Until the key is filled in, the form falls back to `mailto:`, which opens
-whatever mail handler the visitor has set in their browser or operating system
-(Gmail, Outlook, Apple Mail, and so on).
+Until the key is filled in, submitting the form reveals three choices:
+**Gmail** and **Outlook** open a pre-filled compose window in a new tab, while
+**Default mail app** uses `mailto:` and hands off to whatever the visitor has
+configured in their browser or operating system. Nothing is sent until the
+visitor presses Send in that app.
 
 Alternatives if you prefer:
 

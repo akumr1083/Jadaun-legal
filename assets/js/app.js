@@ -328,13 +328,16 @@
         "Your enquiry goes directly to the firm's inbox — usually answered within one working day.";
     }
 
+    const mailChoice = document.getElementById("mailChoice");
+    let mailLinks = null;
+
     function setStatus(message, isError) {
       if (!status) return;
       status.textContent = message;
       status.classList.toggle("is-error", Boolean(isError));
     }
 
-    function mailFallback(data) {
+    function prepareMail(data) {
       const matter = String(data.get("matter") || "General");
       const subject = "Consultation enquiry — " + matter;
       const body = [
@@ -346,13 +349,51 @@
         String(data.get("message") || ""),
       ].join("\n");
 
-      setStatus(
-        "Opening your mail app with these details — review the message and send it from there."
-      );
-      window.location.href =
-        "mailto:" + FALLBACK_EMAIL +
-        "?subject=" + encodeURIComponent(subject) +
-        "&body=" + encodeURIComponent(body);
+      const to = encodeURIComponent(FALLBACK_EMAIL);
+      const su = encodeURIComponent(subject);
+      const text = encodeURIComponent(body);
+
+      mailLinks = {
+        gmail:
+          "https://mail.google.com/mail/?view=cm&fs=1&to=" + to + "&su=" + su + "&body=" + text,
+        outlook:
+          "https://outlook.live.com/mail/0/deeplink/compose?to=" + to + "&subject=" + su + "&body=" + text,
+        default: "mailto:" + FALLBACK_EMAIL + "?subject=" + su + "&body=" + text,
+      };
+
+      setStatus("Choose where you would like to send this enquiry.");
+      if (mailChoice) {
+        mailChoice.hidden = false;
+        const first = mailChoice.querySelector("[data-mail]");
+        if (first) first.focus();
+      }
+    }
+
+    function openInNewTab(url) {
+      const win = window.open(url, "_blank");
+      if (win) {
+        win.opener = null;
+      } else {
+        window.location.href = url;
+      }
+    }
+
+    if (mailChoice) {
+      mailChoice.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-mail]");
+        if (!button || !mailLinks) return;
+
+        const platform = button.getAttribute("data-mail");
+
+        if (platform === "default") {
+          setStatus("Opening your default mail app with these details…");
+          window.location.href = mailLinks.default;
+          return;
+        }
+
+        setStatus(platform === "gmail" ? "Opening Gmail…" : "Opening Outlook…");
+        openInNewTab(mailLinks[platform]);
+      });
     }
 
     form.addEventListener("submit", async (event) => {
@@ -368,7 +409,7 @@
       if (data.get("botcheck")) return;
 
       if (!configured) {
-        mailFallback(data);
+        prepareMail(data);
         return;
       }
 

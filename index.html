@@ -705,8 +705,21 @@
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M12 4H6M12 4v6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           </button>
 
-          <p class="form__note" id="formNote">This form opens your default mail app with the details filled in. Nothing is stored on this site.</p>
+          <p class="form__note" id="formNote">Choose Gmail, Outlook or your default mail app to send this enquiry. Nothing is stored on this site.</p>
           <p class="form__status" id="formStatus" role="status" aria-live="polite"></p>
+
+          <div class="form__choice" id="mailChoice" hidden>
+            <p class="form__choice-label" id="mailChoiceLabel">Send this enquiry with</p>
+            <div class="form__choice-options" role="group" aria-labelledby="mailChoiceLabel">
+              <button class="btn btn--ghost btn--sm" type="button" data-mail="gmail">Gmail</button>
+              <button class="btn btn--ghost btn--sm" type="button" data-mail="outlook">Outlook</button>
+              <button class="btn btn--ghost btn--sm" type="button" data-mail="default">Default mail app</button>
+            </div>
+            <p class="form__choice-hint">
+              Opens the message with your details filled in. If nothing happens, allow pop-ups for
+              this site or choose another option.
+            </p>
+          </div>
         </form>
       </div>
     </div>
