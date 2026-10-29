@@ -115,6 +115,13 @@ Images in `assets/img/`:
 - **Subpages** — careers and disclaimer reuse the home page's nav, footer and
   design tokens. They share `style.css` and `app.js`; only the home page loads
   `scene.js`, so the 3D hero does not run behind text-heavy pages.
+- **Entry gate** — `index.html` and `careers.html` open with a Bar Council style
+  notice. Choosing **I agree** stores `jl-disclaimer-accepted-v1` in
+  `localStorage` and removes the gate; **I do not agree** shows a short message.
+  The gate traps focus, locks background scrolling and is skipped when storage
+  already holds the acceptance. `disclaimer.html` has no gate so the text stays
+  reachable. Bump the key's version in both the head script and `app.js` when the
+  notice wording changes.
 
 ## Things to swap before publishing
 
