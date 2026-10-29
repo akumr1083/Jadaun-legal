@@ -409,8 +409,10 @@ main section[id],
   display: flex;
   flex-direction: column;
   justify-content: center;
+  justify-content: safe center;
   gap: 34px;
   padding: 110px var(--gutter) 44px;
+  overflow-y: auto;
   background: rgba(7, 8, 10, 0.97);
   backdrop-filter: blur(12px);
   opacity: 0;
@@ -1760,6 +1762,9 @@ main section[id],
   .team__grid .person:nth-child(4) { grid-column: span 2; }
   .team__grid .person:nth-child(5) { grid-column: 2 / span 2; }
   .founder__grid { grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); gap: 40px; }
+  .tracks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .track:nth-child(3) { grid-column: 1 / -1; }
+  .apply { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 560px) {
@@ -1794,10 +1799,7 @@ main section[id],
   .legal__toc ol { display: flex; flex-wrap: wrap; gap: 4px 18px; }
   .legal__toc a { padding: 4px 0; border-bottom: 0; }
 
-  .tracks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .track:nth-child(3) { grid-column: 1 / -1; }
   .careers__grid { grid-template-columns: 1fr; }
-  .apply { grid-template-columns: 1fr; }
 
   .firm__grid,
   .founder__grid,

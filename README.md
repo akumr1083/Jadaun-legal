@@ -1,9 +1,12 @@
 # Jadaun Legal — 3D website
 
-A single-page redesign for the Jadaun Legal practice (formerly the Wix site at
+A multi-page redesign for the Jadaun Legal practice (formerly the Wix site at
 `princekumar997742.wixsite.com/jadaun-associates`). Dark editorial layout,
 brass accents and a live WebGL hero composed of brass rings, a colonnade and a
 glass obelisk.
+
+The site has three pages: home (`index.html`), careers (`careers.html`) and the
+website disclaimer (`disclaimer.html`).
 
 ## Run it locally
 
@@ -16,23 +19,53 @@ python -m http.server 4173
 
 Then open <http://localhost:4173>.
 
-## Publish (GitHub Pages)
+## Publish (Vercel)
 
-The site is static, uses relative paths and ships a `.nojekyll` file, so it can
-be served straight from the repo — no build step.
+The site is plain static HTML with no build step. Vercel serves it directly and,
+unlike GitHub Pages on a free account, it can deploy from a **private** repo.
 
-1. On GitHub open **Settings → Pages**.
-2. Under *Build and deployment* pick **Deploy from a branch**.
-3. Choose **main** and **/ (root)**, then save.
+### One-time setup
 
-It goes live at `https://akumr1083.github.io/Jadaun-legal/` within a minute or
-two. Pages on a **private** repository needs a paid GitHub plan — make the repo
-public, or point Netlify/Cloudflare Pages at the repo instead.
+1. Sign in at [vercel.com](https://vercel.com) with the GitHub account that owns
+   the repo (`akumr1083`).
+2. Choose **Add New → Project**, then **Import Git Repository**. If the repo is
+   not listed, open **GitHub → Settings → Applications → Vercel** and grant
+   access to `Jadaun-legal`.
+3. Leave the defaults:
+   - **Framework preset:** Other
+   - **Root directory:** `./`
+   - **Build command:** empty
+   - **Output directory:** empty (Vercel serves the repo root)
+4. Click **Deploy**. The first deployment takes a few seconds.
+
+The site goes live at `https://jadaun-legal.vercel.app` (the exact name depends
+on availability; Vercel shows it after deployment).
+
+### After that
+
+Every push to `main` triggers a new production deployment. Pull requests get
+their own preview URLs. To use a custom domain, open **Project → Settings →
+Domains**, add the domain and point its DNS at Vercel.
+
+### Notes
+
+- `.nojekyll` is harmless on Vercel; it is only needed for GitHub Pages.
+- No `vercel.json` is required. The relative asset paths work as-is.
+- For a drag-and-drop deploy, `vercel.com/new` also accepts a folder — but the
+  Git import gives you automatic redeploys.
+
+### Alternative hosts
+
+GitHub Pages works too, but needs a **public** repo on the free plan (Settings →
+Pages → Deploy from a branch → `main` / root). Netlify and Cloudflare Pages can
+also serve the folder with no build step.
 
 ## Files
 
 ```
-index.html              markup, content, metadata, JSON-LD
+index.html              home page: markup, content, metadata, JSON-LD
+careers.html            careers page: tracks, criteria, application steps
+disclaimer.html         website terms and Bar Council disclaimer
 assets/css/style.css    design system, layout, responsive rules
 assets/js/scene.js      Three.js hero (three r170 via CDN import map)
 assets/js/app.js        nav, reveals, tilt, cursor, form, scroll progress
@@ -79,6 +112,9 @@ Images in `assets/img/`:
 - **Team** — five cards (two advocates, three legal assistants), each with a
   LinkedIn button over the portrait and a labelled link target; the same profiles
   are listed in the `employee` schema.
+- **Subpages** — careers and disclaimer reuse the home page's nav, footer and
+  design tokens. They share `style.css` and `app.js`; only the home page loads
+  `scene.js`, so the 3D hero does not run behind text-heavy pages.
 
 ## Things to swap before publishing
 
@@ -93,9 +129,10 @@ Images in `assets/img/`:
    `object-position` on `.plate__img` / `.person__photo img` if a crop is off.
 3. **Domain / canonical** — add a canonical URL and absolute `og:image` once the
    site has a domain.
-4. **Legal pages** — add a privacy note and a disclaimer as required for
-   advocate advertising rules in India (Bar Council of India guidelines) before
-   going live.
+4. **Legal pages** — `disclaimer.html` already covers the Bar Council of India
+   no-solicitation rule, the absence of an advocate–client relationship, no
+   guarantee of results and governing law. Have the firm review the wording, and
+   add a privacy note before collecting personal data through the form.
 
 ## Bookings and notifications
 
@@ -163,7 +200,8 @@ advertising rules also apply to how a practice presents itself online.
 
 ## Performance
 
-- No build step; only two CDN requests (`three` and the Google Fonts stylesheet).
+- No build step. The home page makes two CDN requests (`three` and the Google
+  Fonts stylesheet); the subpages only load the fonts.
 - `three` is imported as a module, so the page still renders and remains usable
   if the CDN is blocked — only the 3D layer is lost.
 - Images: five photos + emblem, all resized and compressed locally (85–332 KB
