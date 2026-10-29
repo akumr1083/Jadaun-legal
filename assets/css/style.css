@@ -1791,16 +1791,17 @@ main section[id],
   list-style: none;
 }
 .apply__steps li {
-  display: grid;
-  grid-template-columns: 26px minmax(0, 1fr);
-  gap: 10px;
+  position: relative;
+  padding-left: 36px;
   color: var(--ink-2);
   font-size: 0.88rem;
 }
 .apply__steps li::before {
+  position: absolute;
+  left: 0;
+  top: 2px;
   counter-increment: apply;
   content: counter(apply, decimal-leading-zero);
-  padding-top: 2px;
   font-size: 0.62rem;
   letter-spacing: 0.16em;
   color: var(--brass);
