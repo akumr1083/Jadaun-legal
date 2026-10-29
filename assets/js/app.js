@@ -28,6 +28,81 @@
     window.setTimeout(dismissLoader, 2600);
   }
 
+  /* ---------- disclaimer consent ---------- */
+
+  const CONSENT_KEY = "jl-disclaimer-accepted-v1";
+  const consent = document.getElementById("consent");
+
+  function hasConsent() {
+    try {
+      return window.localStorage.getItem(CONSENT_KEY) === "accepted";
+    } catch (error) {
+      return false;
+    }
+  }
+
+  if (consent) {
+    if (hasConsent()) {
+      root.classList.add("consent-ok");
+      consent.remove();
+    } else {
+      root.classList.add("gate-open");
+
+      const agree = consent.querySelector("[data-consent-agree]");
+      const decline = consent.querySelector("[data-consent-decline]");
+      const error = consent.querySelector(".consent__error");
+
+      const focusable = () =>
+        Array.from(
+          consent.querySelectorAll(
+            'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((element) => element.offsetParent !== null);
+
+      function accept() {
+        try {
+          window.localStorage.setItem(CONSENT_KEY, "accepted");
+        } catch (error) {
+          /* storage can be blocked; the gate will simply show again */
+        }
+        consent.classList.add("is-closing");
+        window.setTimeout(() => {
+          root.classList.add("consent-ok");
+          root.classList.remove("gate-open");
+          consent.remove();
+        }, 700);
+      }
+
+      if (agree) agree.addEventListener("click", accept);
+
+      if (decline) {
+        decline.addEventListener("click", () => {
+          if (error) error.hidden = false;
+          if (agree) agree.focus();
+        });
+      }
+
+      window.setTimeout(() => {
+        if (agree) agree.focus();
+      }, 350);
+
+      consent.addEventListener("keydown", (event) => {
+        if (event.key !== "Tab") return;
+        const items = focusable();
+        if (!items.length) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      });
+    }
+  }
+
   /* ---------- nav ---------- */
 
   const nav = document.getElementById("nav");

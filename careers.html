@@ -21,7 +21,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="assets/css/style.css">
-<script>document.documentElement.classList.replace('no-js', 'js');</script>
+<script>
+  document.documentElement.classList.replace("no-js", "js");
+  try {
+    if (localStorage.getItem("jl-disclaimer-accepted-v1") === "accepted") {
+      document.documentElement.classList.add("consent-ok");
+    }
+  } catch (error) {}
+</script>
+<noscript><style>.consent { display: none !important; }</style></noscript>
 </head>
 <body>
 
@@ -34,6 +42,43 @@
     <img class="loader__mark" src="assets/img/logo-mark.png" alt="" width="256" height="204" decoding="async">
     <span class="loader__bar"><i></i></span>
     <span class="loader__label">Jadaun Legal</span>
+  </div>
+</div>
+
+<div class="consent" id="consent" role="dialog" aria-modal="true"
+     aria-labelledby="consentTitle" aria-describedby="consentText">
+  <div class="consent__panel">
+    <img class="consent__mark" src="assets/img/logo-mark.png" alt=""
+         width="256" height="204" decoding="async">
+    <p class="consent__eyebrow">Website notice</p>
+    <h2 id="consentTitle">Before you <em>proceed</em>.</h2>
+
+    <div id="consentText">
+      <p>
+        This website is a general information resource about Jadaun Legal. Nothing on it
+        is legal advice, and it is not an advertisement or a solicitation of work.
+      </p>
+      <p>
+        In accordance with the rules of the Bar Council of India, by continuing you
+        acknowledge that you are accessing this site voluntarily and of your own accord,
+        and that no advocate–client relationship is created by doing so.
+      </p>
+    </div>
+
+    <p class="consent__small">
+      Read the <a href="disclaimer.html" target="_blank" rel="noopener">full disclaimer</a>
+      for the terms that apply to this site.
+    </p>
+
+    <div class="consent__actions">
+      <button class="btn btn--primary" type="button" data-consent-agree>I agree</button>
+      <button class="consent__decline" type="button" data-consent-decline>I do not agree</button>
+    </div>
+
+    <p class="consent__error" hidden>
+      You need to agree to the notice before browsing the site. You can read the
+      <a href="disclaimer.html" target="_blank" rel="noopener">full disclaimer</a> first.
+    </p>
   </div>
 </div>
 
