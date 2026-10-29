@@ -10,11 +10,24 @@ glass obelisk.
 The page uses ES modules, so open it over HTTP rather than `file://`:
 
 ```powershell
-cd "C:\Users\acer\OneDrive\文档\Default Project\jadaun-legal"
+cd "C:\Users\acer\OneDrive\Desktop\Jadaun-legal"
 python -m http.server 4173
 ```
 
 Then open <http://localhost:4173>.
+
+## Publish (GitHub Pages)
+
+The site is static, uses relative paths and ships a `.nojekyll` file, so it can
+be served straight from the repo — no build step.
+
+1. On GitHub open **Settings → Pages**.
+2. Under *Build and deployment* pick **Deploy from a branch**.
+3. Choose **main** and **/ (root)**, then save.
+
+It goes live at `https://akumr1083.github.io/Jadaun-legal/` within a minute or
+two. Pages on a **private** repository needs a paid GitHub plan — make the repo
+public, or point Netlify/Cloudflare Pages at the repo instead.
 
 ## Files
 
@@ -38,7 +51,7 @@ Images in `assets/img/`:
 | `akshay-kumar.jpg` | 900×1125 | team card 05 |
 | `firm-about.jpg` | 1600×1200 | spare — reserved for the About band |
 | `logo-jadaun.webp` | 1024×1024 | original Wix logo (source) |
-| `logo-mark.png` | 256×210 | trimmed transparent emblem — nav, loader, footer |
+| `logo-mark.png` | 256×204 | emblem only (scales + JL) — nav, loader, footer |
 | `favicon.png` | 256×256 | browser tab icon |
 
 ## Design notes
@@ -57,7 +70,7 @@ Images in `assets/img/`:
   magnetic buttons, a subtle custom cursor on fine-pointer devices, and a scroll
   progress hairline.
 - **Brand** — the Wix emblem was cropped from the original 1024² WebP to a
-  transparent 256×210 mark and sits in the nav, the intro loader and above the
+  transparent 256×204 mark and sits in the nav, the intro loader and above the
   footer wordmark, with a matching 256×256 favicon. Each instance is a plain
   `<img>` with intrinsic dimensions, so it scales crisply and never shifts layout.
 - **Accessibility** — skip link, visible focus rings, labelled form fields,
