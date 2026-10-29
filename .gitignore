@@ -1,0 +1,8 @@
+# Local test harnesses and scratch files
+_*.html
+_check_*.py
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini
