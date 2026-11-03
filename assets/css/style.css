@@ -573,13 +573,38 @@ main section[id],
     var(--bg);
 }
 
-#scene {
+.hero__art {
   position: absolute;
-  inset: 0;
+  inset: 0 0 0 auto;
+  width: min(62%, 1040px);
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero__art-img {
+  display: block;
   width: 100%;
   height: 100%;
-  z-index: 0;
+  object-fit: cover;
+  object-position: 58% 42%;
+  filter: saturate(0.96) brightness(0.96);
+}
+.hero__art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(90deg, var(--bg) 0%, rgba(7, 8, 10, 0.72) 9%, rgba(7, 8, 10, 0.16) 34%, rgba(7, 8, 10, 0) 56%),
+    linear-gradient(180deg, rgba(7, 8, 10, 0.5) 0%, rgba(7, 8, 10, 0) 22%, rgba(7, 8, 10, 0) 72%, var(--bg) 100%);
+}
+.hero__flag {
+  position: absolute;
+  z-index: 3;
+  display: block;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s var(--ease);
 }
 
 .hero__scrim {
@@ -1949,15 +1974,22 @@ main section[id],
   .nav .btn { display: none; }
   .nav__toggle { display: block; }
 
-  .hero { min-height: auto; padding-top: clamp(110px, 16vh, 150px); }
-  .hero__inner { grid-template-columns: 1fr; }
-  .hero__aside { display: none; }
-  #scene { opacity: 0.5; }
-  .hero__scrim {
-    background:
-      linear-gradient(180deg, rgba(7, 8, 10, 0.82) 0%, rgba(7, 8, 10, 0.45) 42%, rgba(7, 8, 10, 0.86) 82%, var(--bg) 100%),
-      linear-gradient(90deg, rgba(7, 8, 10, 0.55), rgba(7, 8, 10, 0) 70%);
+  .hero { min-height: auto; padding-top: 0; }
+  .hero__inner {
+    grid-template-columns: 1fr;
+    padding-top: calc(clamp(250px, 46vh, 430px) + clamp(26px, 6vw, 44px));
   }
+  .hero__aside { display: none; }
+  .hero__art {
+    inset: 0 0 auto 0;
+    width: 100%;
+    height: clamp(250px, 46vh, 430px);
+  }
+  .hero__art-img { object-position: 50% 12%; }
+  .hero__art::before {
+    background: linear-gradient(180deg, rgba(7, 8, 10, 0.32) 0%, rgba(7, 8, 10, 0) 26%, rgba(7, 8, 10, 0.34) 70%, var(--bg) 100%);
+  }
+  .hero__scrim { display: none; }
 
   .pagehead { padding-top: clamp(120px, 16vh, 150px); }
   .pagehead__inner { grid-template-columns: 1fr; }

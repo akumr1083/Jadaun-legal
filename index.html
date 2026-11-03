@@ -22,14 +22,6 @@
 
 <link rel="stylesheet" href="assets/css/style.css">
 
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
-  }
-}
-</script>
 <script>
   document.documentElement.classList.replace("no-js", "js");
   try {
@@ -216,7 +208,11 @@
 <main id="main">
 
   <section class="hero" id="top">
-    <canvas id="scene" aria-hidden="true"></canvas>
+    <div class="hero__art" aria-hidden="true">
+      <img class="hero__art-img" src="assets/img/supreme-court-hero.jpg" alt=""
+           width="1213" height="1087" fetchpriority="high" decoding="async">
+      <canvas class="hero__flag" width="158" height="168"></canvas>
+    </div>
     <div class="hero__scrim" aria-hidden="true"></div>
 
     <div class="wrap hero__inner">
@@ -780,6 +776,6 @@
 </footer>
 
 <script src="assets/js/app.js" defer></script>
-<script type="module" src="assets/js/scene.js"></script>
+<script src="assets/js/flag.js" defer></script>
 </body>
 </html>

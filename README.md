@@ -1,16 +1,17 @@
-# Jadaun Legal — 3D website
+# Jadaun Legal — advocates website
 
 A multi-page redesign for the Jadaun Legal practice (formerly the Wix site at
 `princekumar997742.wixsite.com/jadaun-associates`). Dark editorial layout,
-brass accents and a live WebGL hero composed of brass rings, a colonnade and a
-glass obelisk.
+brass accents and a full-bleed Supreme Court photograph in the hero, with the
+tricolour fluttering as a live canvas overlay.
 
 The site has three pages: home (`index.html`), careers (`careers.html`) and the
 website disclaimer (`disclaimer.html`).
 
 ## Run it locally
 
-The page uses ES modules, so open it over HTTP rather than `file://`:
+The site is plain static HTML with no build step. Serve it over HTTP so the
+relative paths and the consent gate behave exactly as they do in production:
 
 ```powershell
 cd "C:\Users\acer\OneDrive\Desktop\Jadaun-legal"
@@ -67,9 +68,9 @@ index.html              home page: markup, content, metadata, JSON-LD
 careers.html            careers page: tracks, criteria, application steps
 disclaimer.html         website terms and Bar Council disclaimer
 assets/css/style.css    design system, layout, responsive rules
-assets/js/scene.js      Three.js hero (three r170 via CDN import map)
+assets/js/flag.js       animated tricolour canvas over the hero photograph
 assets/js/app.js        nav, reveals, tilt, cursor, form, scroll progress
-assets/img/             portraits, firm image and brand mark (from the Wix site)
+assets/img/             portraits, Supreme Court hero and brand mark
 favicon                 assets/img/favicon.png (256×256 emblem on near-black)
 ```
 
@@ -83,6 +84,7 @@ Images in `assets/img/`:
 | `prince-kumar.jpg` | 900×1125 | team card 04 |
 | `akshay-kumar.jpg` | 900×1125 | team card 05 |
 | `firm-about.jpg` | 1600×1200 | spare — reserved for the About band |
+| `supreme-court-hero.jpg` | 1213×1087 | hero photograph (building, statue and flag) |
 | `logo-jadaun.webp` | 1024×1024 | original Wix logo (source) |
 | `logo-mark.png` | 256×204 | emblem only (scales + JL) — nav, loader, footer |
 | `favicon.png` | 256×256 | browser tab icon |
@@ -90,15 +92,20 @@ Images in `assets/img/`:
 ## Design notes
 
 - **Palette** — near-black `#07080A`, warm ink `#ECE8E0`, brass `#C6A15B` /
-  `#E4C68A`. The only saturated colour is the brass, which keeps the 3D scene
-  reading as metal rather than decoration.
+  `#E4C68A`. The only saturated colour is the brass, which keeps the photograph
+  reading as warm stone and metal rather than decoration.
 - **Type** — Cormorant Garamond for display (light weight, tight leading), Inter
   for body and small caps labels. Labels are 10–11px with wide tracking.
-- **3D** — one renderer inside the hero, paused when the hero scrolls out of view
-  or the tab is hidden. Device pixel ratio is capped (1.8 desktop / 1.5 mobile),
-  bloom and geometry counts drop on small screens, and the whole scene degrades
-  to the CSS gradient if WebGL is unavailable. `prefers-reduced-motion` renders a
-  single still frame.
+- **Hero art** — a single photograph of the Supreme Court of India, cropped so
+  the dome, the statue and the flag sit on the right of the hero. On desktop it
+  fills the right ~62% of the viewport; at 900px and below it becomes a top band
+  with the copy underneath. The image is dimmed and scrimmed so the headline and
+  nav stay legible.
+- **Flag** — `flag.js` cuts the tricolour out of the photograph with a polygon
+  mask, then redraws it in vertical strips with a travelling sine offset and
+  soft fold shading. The pole, wall and building stay still. The animation
+  pauses when the hero leaves the viewport or the tab is hidden, and
+  `prefers-reduced-motion` renders one still frame.
 - **Interaction** — scroll reveals, pointer-driven card tilt with a brass glow,
   magnetic buttons, a subtle custom cursor on fine-pointer devices, and a scroll
   progress hairline.
@@ -114,7 +121,7 @@ Images in `assets/img/`:
   are listed in the `employee` schema.
 - **Subpages** — careers and disclaimer reuse the home page's nav, footer and
   design tokens. They share `style.css` and `app.js`; only the home page loads
-  `scene.js`, so the 3D hero does not run behind text-heavy pages.
+  `flag.js`, so the hero animation never runs behind text-heavy pages.
 - **Entry gate** — `index.html` and `careers.html` open with a Bar Council style
   notice. Choosing **I agree** stores `jl-disclaimer-accepted-v1` in
   `localStorage` and removes the gate; **I do not agree** shows a short message.
@@ -211,10 +218,10 @@ advertising rules also apply to how a practice presents itself online.
 
 ## Performance
 
-- No build step. The home page makes two CDN requests (`three` and the Google
-  Fonts stylesheet); the subpages only load the fonts.
-- `three` is imported as a module, so the page still renders and remains usable
-  if the CDN is blocked — only the 3D layer is lost.
+- No build step. The only third-party request is the Google Fonts stylesheet.
+- The hero uses one compressed JPEG (`supreme-court-hero.jpg`, ~270 KB) with
+  `fetchpriority="high"`; the flag is drawn on a small canvas from that same
+  image, so there is no second image download.
 - Images: five photos + emblem, all resized and compressed locally (85–332 KB
   each, ~750 KB total). Below-the-fold images use `loading="lazy"`; the founder
   plate and portraits are 4:5 crops so the browser reserves space and nothing
