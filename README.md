@@ -65,11 +65,15 @@ also serve the folder with no build step.
 
 ```
 index.html              home page: markup, content, metadata, JSON-LD
-careers.html            careers page: tracks, criteria, application steps
+careers.html            careers page: roles, criteria, application form
 disclaimer.html         website terms and Bar Council disclaimer
 assets/css/style.css    design system, layout, responsive rules
 assets/js/flag.js       animated tricolour canvas over the hero artwork
-assets/js/app.js        nav, reveals, tilt, cursor, form, scroll progress
+assets/js/app.js        nav, reveals, tilt, cursor, enquiry form, progress
+assets/js/careers.js    application validation, resume UX, submission
+assets/js/careers-config.js  Supabase endpoint + fallback contact email
+supabase/schema.sql     application table, RLS and private resume bucket
+supabase/functions/submit-application/index.ts  upload, insert, notify
 assets/img/             portraits, Supreme Court hero and brand mark
 favicon                 assets/img/favicon.png (256×256 emblem on warm ivory)
 ```
@@ -98,7 +102,8 @@ Images in `assets/img/`:
   backgrounds alternate ivory and beige to separate the content bands, and the
   footer is a solid espresso block with ivory type.
 - **Type** — Cormorant Garamond for display (light weight, tight leading), Inter
-  for body and small caps labels. Labels are 10–11px with wide tracking.
+  for body and small caps labels. Labels are 10–11px with wide tracking. The
+  careers application card adds Playfair Display for its headings only.
 - **Hero art** — a single golden-beige illustration of the Supreme Court of India,
   cropped so the dome, the statue and the flag sit on the right of the hero. It is
   already painted in the site palette, so it needs only a light contrast lift and
@@ -125,8 +130,14 @@ Images in `assets/img/`:
   LinkedIn button over the portrait and a labelled link target; the same profiles
   are listed in the `employee` schema.
 - **Subpages** — careers and disclaimer reuse the home page's nav, footer and
-  design tokens. They share `style.css` and `app.js`; only the home page loads
-  `flag.js`, so the hero animation never runs behind text-heavy pages.
+  design tokens. They share `style.css` and `app.js`; the careers page also loads
+  `careers.js` and `careers-config.js`, while only the home page loads `flag.js`,
+  so the hero animation never runs behind text-heavy pages.
+- **Careers form** — ivory card on the light page ground, rounded 9px fields with
+  tan hairlines, champagne focus rings and Playfair Display for the form headings
+  (the rest of the site keeps Cormorant Garamond). Fields are grouped into five
+  numbered fieldsets, the CV dropzone supports drag-and-drop and replacement, and
+  errors appear inline beside the field they belong to.
 - **Entry gate** — `index.html` and `careers.html` open with a Bar Council style
   notice. Choosing **I agree** stores `jl-disclaimer-accepted-v1` in
   `localStorage` and removes the gate; **I do not agree** shows a short message.
@@ -137,18 +148,23 @@ Images in `assets/img/`:
 
 ## Things to swap before publishing
 
-1. **Contact form — access key** — the form already posts to Web3Forms, but
+1. **Careers backend — Supabase endpoint** — the application form is complete, but
+   `assets/js/careers-config.js` still has an empty `submitEndpoint`. Until the
+   Supabase project in `supabase/` is deployed, the form validates the application
+   and offers a pre-filled email instead of pretending to save it. See *Careers
+   application portal* below.
+2. **Contact form — access key** — the form already posts to Web3Forms, but
    `index.html` still contains the placeholder `YOUR-WEB3FORMS-ACCESS-KEY`. Until
    a real key is pasted in, the form offers Gmail, Outlook or the visitor's
    default mail app. See *Bookings and notifications* below.
-2. **Portraits** — the founder plate and the five team cards already use the
+3. **Portraits** — the founder plate and the five team cards already use the
    practice's own images. To swap one, replace the file in `assets/img/` with the
    same aspect ratio (4:5 for portraits) and keep the `width`/`height`
    attributes in `index.html` in sync. Faces sit high in frame; adjust
    `object-position` on `.plate__img` / `.person__photo img` if a crop is off.
-3. **Domain / canonical** — add a canonical URL and absolute `og:image` once the
+4. **Domain / canonical** — add a canonical URL and absolute `og:image` once the
    site has a domain.
-4. **Legal pages** — `disclaimer.html` already covers the Bar Council of India
+5. **Legal pages** — `disclaimer.html` already covers the Bar Council of India
    no-solicitation rule, the absence of an advocate–client relationship, no
    guarantee of results and governing law. Have the firm review the wording, and
    add a privacy note before collecting personal data through the form.
@@ -220,6 +236,145 @@ plus the booking confirmation email on every reservation.
 Whatever you choose, add a consent line for personal data (name, phone, email)
 before going live — required under India's DPDP Act, and the Bar Council's
 advertising rules also apply to how a practice presents itself online.
+
+## Careers application portal
+
+`careers.html` contains the full application form: six positions, personal and
+professional details, a CV upload, the mandatory declaration and the exact
+success message requested by the firm. Validation, file handling and submission
+live in `assets/js/careers.js`.
+
+The form is wired for a **Supabase** backend:
+
+```
+careers.html
+  └─ careers.js  ──POST multipart──▶  Supabase Edge Function
+                                      ├─ validate fields + CV signature
+                                      ├─ upload CV to private "resumes" bucket
+                                      ├─ insert row in job_applications
+                                      └─ email the firm via Resend
+```
+
+Candidate rows and resumes are never readable with the public anon key. The
+function uses the service role on the server, and the dashboard is the only
+review surface.
+
+### 1. Create the database and bucket
+
+1. Create a project at [supabase.com](https://supabase.com).
+2. Open **SQL Editor** and run [`supabase/schema.sql`](supabase/schema.sql).
+   It creates `job_applications`, enables RLS with no public policies, and
+   creates the private `resumes` bucket (5 MB limit, PDF/DOC/DOCX only).
+
+### 2. Deploy the Edge Function
+
+Install the CLI, sign in and link the project:
+
+```powershell
+npm install -g supabase
+supabase login
+supabase link --project-ref <your-project-ref>
+```
+
+Deploy the function and set its secrets:
+
+```powershell
+supabase functions deploy submit-application --no-verify-jwt
+
+supabase secrets set `
+  RESEND_API_KEY=re_your_key `
+  CAREERS_NOTIFY_EMAIL=advabhaysingh07@gmail.com `
+  CAREERS_FROM_EMAIL="Jadaun Legal Careers <careers@yourdomain.com>" `
+  ALLOWED_ORIGIN=https://jadaunlegal.vercel.app
+```
+
+`--no-verify-jwt` is appropriate because the form is public; the function
+validates every field, checks the file signature and rate-limits by IP. If you
+prefer Supabase's JWT gate, deploy without the flag and paste the project's
+**anon** key into `careers-config.js` (never the service-role key).
+
+`RESEND_API_KEY` is optional. Without it, applications are still stored and
+reviewable in Supabase; only the email notification is skipped. To send mail,
+create a [Resend](https://resend.com) account, verify your domain and use a
+sender on that domain. `CAREERS_NOTIFY_EMAIL` is the inbox that receives each
+application.
+
+### 3. Connect the page
+
+Edit `assets/js/careers-config.js`:
+
+```js
+window.JADAUN_CAREERS = {
+  submitEndpoint:
+    "https://<your-project-ref>.supabase.co/functions/v1/submit-application",
+  supabaseAnonKey: "", // only needed if JWT verification is enabled
+  maxResumeMB: 5,
+  contactEmail: "advabhaysingh07@gmail.com",
+};
+```
+
+Commit and redeploy. The “online applications are not connected” notice
+disappears as soon as a valid `submitEndpoint` is present.
+
+### 4. Review applications
+
+In the Supabase dashboard:
+
+- **Table Editor → job_applications** — filter by `position` for position-wise
+  review, set `status` (`new`, `reviewing`, `shortlisted`, `interview`,
+  `rejected`, `hired`) and add private `internal_notes`. CSV export is available
+  from the same screen.
+- **Storage → resumes** — files are stored under `YYYY/MM/<application-id>-<name>`.
+  The bucket is private; use the dashboard download button or the seven-day
+  signed link in the notification email.
+
+Useful SQL:
+
+```sql
+select position, count(*) as total
+from public.job_applications
+group by position
+order by total desc;
+
+select full_name, email, mobile, position, created_at, status
+from public.job_applications
+where position = 'Internship'
+order by created_at desc;
+```
+
+### 5. What is protected
+
+- **No public database access.** RLS is enabled and anon/authenticated have no
+  policies; `anon` and `authenticated` are also revoked on the table.
+- **No public files.** The `resumes` bucket is private with no storage policies.
+  Only the service role (inside the function) and the authenticated dashboard
+  can touch it.
+- **Server-side checks.** The function repeats every client validation, checks
+  PDF/DOC/DOCX magic bytes, caps the CV at 5 MB and limits each IP to five
+  applications per ten minutes.
+- **Spam and duplicates.** A hidden honeypot and a per-page `client_token`
+  (unique in Postgres) stop bot traffic and accidental double inserts.
+- **Private notification links.** Resend receives a seven-day signed URL, not a
+  public file URL.
+- **No candidate data in the page.** The HTML contains no candidate records,
+  keys or resume paths.
+
+### 6. Honest fallback until it is connected
+
+If `submitEndpoint` is empty, the page shows a clear notice and changes the
+button to **Continue by email**. The form still validates every field, then
+offers a pre-filled `mailto:` with all the answers plus a **Copy application
+details** button. The candidate must attach the CV before sending. The success
+message is only shown after the Edge Function returns a real `2xx`; the site
+never fakes a submission.
+
+### 7. Privacy and retention
+
+The declaration records consent to processing for recruitment. Before go-live,
+add a privacy note covering who can access applications, how long they are kept
+and how a candidate can request deletion (India's DPDP Act applies). Restrict
+Supabase dashboard access to the firm, do not forward CVs outside the hiring
+process, and delete old applications and their storage objects on a schedule.
 
 ## Performance
 
