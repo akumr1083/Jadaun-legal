@@ -1,6 +1,6 @@
 /* =========================================================
    Jadaun Legal — hero flag
-   Cuts the tricolour out of the Supreme Court photograph and
+   Cuts the tricolour out of the Supreme Court artwork and
    redraws it as vertical strips so the cloth ripples while the
    pole, wall and building stay perfectly still.
    ========================================================= */
@@ -19,20 +19,27 @@
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* Cloth bounds in the photograph (1213 x 1087). */
-  const FLAG = { x: 646, y: 368, w: 72, h: 88 };
+  /* Cloth bounds in the hero artwork (1325 x 1187). */
+  const FLAG = { x: 684, y: 395, w: 90, h: 87 };
 
   /* Extra canvas around the cloth so the ripple never clips. */
-  const PAD = 8;
+  const PAD = 12;
 
   /* Cloth outline in sprite coordinates, following the wavy edges. */
   const CLOTH = [
-    [5, 4],
-    [63, 25],
-    [66, 50],
-    [64, 66],
-    [62, 82],
-    [5, 68],
+    [1, 2],
+    [22, 8],
+    [44, 15],
+    [66, 23],
+    [89, 30],
+    [90, 42],
+    [90, 55],
+    [90, 68],
+    [89, 86],
+    [66, 83],
+    [44, 81],
+    [22, 78],
+    [1, 75],
   ];
 
   let sprite = null;
@@ -136,15 +143,19 @@
     const pad = PAD * scale;
     const clothW = FLAG.w * scale;
     const clothH = FLAG.h * scale;
-    const amp = Math.max(0.6, clothH * 0.045);
-    const cols = Math.max(30, Math.round(clothW));
+    const amp = Math.max(1, clothH * 0.115);
+    const cols = Math.max(36, Math.round(clothW));
     const colWidth = clothW / cols;
     const srcWidth = (FLAG.w * 2) / cols;
 
-    /* Slice the cloth into columns and offset each one vertically. */
+    /* Slice the cloth into columns and offset each one vertically. Two
+       sine terms keep the flutter from reading as a mechanical bob. */
     for (let i = 0; i < cols; i += 1) {
       const u = i / (cols - 1);
-      const dy = Math.sin(time * 2.3 + u * 5.8) * amp * (0.08 + 0.92 * u);
+      const wave =
+        Math.sin(time * 2.1 + u * 6.4) * 0.72 +
+        Math.sin(time * 3.4 + u * 3.2 + 1.3) * 0.28;
+      const dy = wave * amp * (0.02 + 0.98 * u);
 
       ctx.drawImage(
         sprite,
@@ -163,13 +174,15 @@
     ctx.globalCompositeOperation = "source-atop";
     for (let i = 0; i < cols; i += 1) {
       const u = i / (cols - 1);
-      const shade = Math.sin(time * 2.3 + u * 5.8 - 0.9);
-      const alpha = Math.abs(shade) * 0.15;
+      const shade =
+        Math.sin(time * 2.1 + u * 6.4 - 0.9) * 0.7 +
+        Math.sin(time * 3.4 + u * 3.2 + 0.4) * 0.3;
+      const alpha = Math.abs(shade) * 0.18;
 
       ctx.fillStyle =
         shade > 0
-          ? "rgba(255, 240, 208, " + alpha.toFixed(3) + ")"
-          : "rgba(26, 15, 0, " + alpha.toFixed(3) + ")";
+          ? "rgba(255, 244, 214, " + alpha.toFixed(3) + ")"
+          : "rgba(30, 18, 2, " + alpha.toFixed(3) + ")";
       ctx.fillRect(pad + i * colWidth, 0, colWidth + 1, height);
     }
     ctx.globalCompositeOperation = "source-over";

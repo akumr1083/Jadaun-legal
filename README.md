@@ -2,7 +2,7 @@
 
 A multi-page redesign for the Jadaun Legal practice (formerly the Wix site at
 `princekumar997742.wixsite.com/jadaun-associates`). Warm ivory editorial layout,
-champagne-gold accents and a Supreme Court photograph in the hero, with the
+champagne-gold accents and a Supreme Court artwork in the hero, with the
 tricolour fluttering as a live canvas overlay.
 
 The site has three pages: home (`index.html`), careers (`careers.html`) and the
@@ -68,7 +68,7 @@ index.html              home page: markup, content, metadata, JSON-LD
 careers.html            careers page: tracks, criteria, application steps
 disclaimer.html         website terms and Bar Council disclaimer
 assets/css/style.css    design system, layout, responsive rules
-assets/js/flag.js       animated tricolour canvas over the hero photograph
+assets/js/flag.js       animated tricolour canvas over the hero artwork
 assets/js/app.js        nav, reveals, tilt, cursor, form, scroll progress
 assets/img/             portraits, Supreme Court hero and brand mark
 favicon                 assets/img/favicon.png (256×256 emblem on warm ivory)
@@ -84,7 +84,7 @@ Images in `assets/img/`:
 | `prince-kumar.jpg` | 900×1125 | team card 04 |
 | `akshay-kumar.jpg` | 900×1125 | team card 05 |
 | `firm-about.jpg` | 1600×1200 | spare — reserved for the About band |
-| `supreme-court-hero.jpg` | 1213×1087 | hero photograph (building, statue and flag) |
+| `supreme-court-hero.jpg` | 1325×1187 | hero artwork (building, statue and flag) |
 | `logo-jadaun.webp` | 1024×1024 | original Wix logo (source) |
 | `logo-mark.png` | 256×204 | emblem only (scales + JL) — nav, loader, footer |
 | `favicon.png` | 256×256 | browser tab icon |
@@ -99,17 +99,17 @@ Images in `assets/img/`:
   footer is a solid espresso block with ivory type.
 - **Type** — Cormorant Garamond for display (light weight, tight leading), Inter
   for body and small caps labels. Labels are 10–11px with wide tracking.
-- **Hero art** — a single photograph of the Supreme Court of India, cropped so
-  the dome, the statue and the flag sit on the right of the hero. The photo is
-  warmed with a sepia filter and faded into the ivory ground with layered
-  gradients, so it reads as a soft architectural plate rather than a dark
-  backdrop. On desktop it fills the right ~62% of the viewport; at 900px and
-  below it becomes a top band with the copy underneath.
-- **Flag** — `flag.js` cuts the tricolour out of the photograph with a polygon
-  mask, then redraws it in vertical strips with a travelling sine offset and
-  soft fold shading. The pole, wall and building stay still. The animation
-  pauses when the hero leaves the viewport or the tab is hidden, and
-  `prefers-reduced-motion` renders one still frame.
+- **Hero art** — a single golden-beige illustration of the Supreme Court of India,
+  cropped so the dome, the statue and the flag sit on the right of the hero. It is
+  already painted in the site palette, so it needs only a light contrast lift and
+  the layered ivory gradients that fade it into the page. On desktop it fills the
+  right ~62% of the viewport; at 900px and below it becomes a top band with the
+  copy underneath.
+- **Flag** — `flag.js` cuts the tricolour out of the hero artwork with a polygon
+  mask, then redraws it in vertical strips with two travelling sine offsets and
+  soft fold shading, so the cloth flutters while the pole, wall and building stay
+  still. The animation pauses when the hero leaves the viewport or the tab is
+  hidden, and `prefers-reduced-motion` renders one still frame.
 - **Interaction** — scroll reveals, pointer-driven card tilt with a soft gold
   glow, magnetic buttons, a subtle custom cursor on fine-pointer devices, and a
   scroll progress hairline. Cream cards lift slightly on hover with a fine tan
@@ -224,7 +224,7 @@ advertising rules also apply to how a practice presents itself online.
 ## Performance
 
 - No build step. The only third-party request is the Google Fonts stylesheet.
-- The hero uses one compressed JPEG (`supreme-court-hero.jpg`, ~270 KB) with
+- The hero uses one compressed JPEG (`supreme-court-hero.jpg`, ~375 KB) with
   `fetchpriority="high"`; the flag is drawn on a small canvas from that same
   image, so there is no second image download.
 - Images: five photos + emblem, all resized and compressed locally (85–332 KB
