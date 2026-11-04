@@ -1,8 +1,8 @@
 # Jadaun Legal — advocates website
 
 A multi-page redesign for the Jadaun Legal practice (formerly the Wix site at
-`princekumar997742.wixsite.com/jadaun-associates`). Dark editorial layout,
-brass accents and a full-bleed Supreme Court photograph in the hero, with the
+`princekumar997742.wixsite.com/jadaun-associates`). Warm ivory editorial layout,
+champagne-gold accents and a Supreme Court photograph in the hero, with the
 tricolour fluttering as a live canvas overlay.
 
 The site has three pages: home (`index.html`), careers (`careers.html`) and the
@@ -71,7 +71,7 @@ assets/css/style.css    design system, layout, responsive rules
 assets/js/flag.js       animated tricolour canvas over the hero photograph
 assets/js/app.js        nav, reveals, tilt, cursor, form, scroll progress
 assets/img/             portraits, Supreme Court hero and brand mark
-favicon                 assets/img/favicon.png (256×256 emblem on near-black)
+favicon                 assets/img/favicon.png (256×256 emblem on warm ivory)
 ```
 
 Images in `assets/img/`:
@@ -91,24 +91,29 @@ Images in `assets/img/`:
 
 ## Design notes
 
-- **Palette** — near-black `#07080A`, warm ink `#ECE8E0`, brass `#C6A15B` /
-  `#E4C68A`. The only saturated colour is the brass, which keeps the photograph
-  reading as warm stone and metal rather than decoration.
+- **Palette** — warm ivory `#F5F0E6` and soft beige `#E8DCC8` grounds, light
+  cream `#FAF7F0` cards, soft tan `#D8CBB8` hairlines, champagne gold `#B08D57`
+  accents and deep espresso `#302820` text. A deeper brass `#7D5D2A` is used for
+  small gold labels so they keep AA contrast on the light grounds. Section
+  backgrounds alternate ivory and beige to separate the content bands, and the
+  footer is a solid espresso block with ivory type.
 - **Type** — Cormorant Garamond for display (light weight, tight leading), Inter
   for body and small caps labels. Labels are 10–11px with wide tracking.
 - **Hero art** — a single photograph of the Supreme Court of India, cropped so
-  the dome, the statue and the flag sit on the right of the hero. On desktop it
-  fills the right ~62% of the viewport; at 900px and below it becomes a top band
-  with the copy underneath. The image is dimmed and scrimmed so the headline and
-  nav stay legible.
+  the dome, the statue and the flag sit on the right of the hero. The photo is
+  warmed with a sepia filter and faded into the ivory ground with layered
+  gradients, so it reads as a soft architectural plate rather than a dark
+  backdrop. On desktop it fills the right ~62% of the viewport; at 900px and
+  below it becomes a top band with the copy underneath.
 - **Flag** — `flag.js` cuts the tricolour out of the photograph with a polygon
   mask, then redraws it in vertical strips with a travelling sine offset and
   soft fold shading. The pole, wall and building stay still. The animation
   pauses when the hero leaves the viewport or the tab is hidden, and
   `prefers-reduced-motion` renders one still frame.
-- **Interaction** — scroll reveals, pointer-driven card tilt with a brass glow,
-  magnetic buttons, a subtle custom cursor on fine-pointer devices, and a scroll
-  progress hairline.
+- **Interaction** — scroll reveals, pointer-driven card tilt with a soft gold
+  glow, magnetic buttons, a subtle custom cursor on fine-pointer devices, and a
+  scroll progress hairline. Cream cards lift slightly on hover with a fine tan
+  border turning champagne gold; there are no heavy shadows or flashy motion.
 - **Brand** — the Wix emblem was cropped from the original 1024² WebP to a
   transparent 256×204 mark and sits in the nav, the intro loader and above the
   footer wordmark, with a matching 256×256 favicon. Each instance is a plain
