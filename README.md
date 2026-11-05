@@ -73,7 +73,7 @@ assets/js/app.js        nav, reveals, tilt, cursor, enquiry form, progress
 assets/js/careers.js    application validation, resume UX, submission
 assets/js/careers-config.js  Supabase endpoint + fallback contact email
 supabase/schema.sql     application table, RLS and private resume bucket
-supabase/functions/submit-application/index.ts  upload, insert, notify
+supabase/functions/submit-application/index.ts  upload, insert, attach CV, notify
 assets/img/             portraits, Supreme Court hero and brand mark
 favicon                 assets/img/favicon.png (256×256 emblem on warm ivory)
 ```
@@ -252,8 +252,14 @@ careers.html
                                       ├─ validate fields + CV signature
                                       ├─ upload CV to private "resumes" bucket
                                       ├─ insert row in job_applications
-                                      └─ email the firm via Resend
+                                      └─ email the firm via Resend,
+                                         with the CV attached
 ```
+
+The browser sends the real file contents as `multipart/form-data`; the function
+reads those bytes once, uploads them to private storage and Base64-encodes the
+same bytes for the email attachment. A filename alone is never enough: if the
+upload fails, the function returns an error and the application is not stored.
 
 Candidate rows and resumes are never readable with the public anon key. The
 function uses the service role on the server, and the dashboard is the only
@@ -299,6 +305,15 @@ create a [Resend](https://resend.com) account, verify your domain and use a
 sender on that domain. `CAREERS_NOTIFY_EMAIL` is the inbox that receives each
 application.
 
+The notification email includes every field the candidate submitted and attaches
+the original PDF, DOC or DOCX file (`attachments` in the Resend API, Base64
+encoded). The function sends the email only after the storage upload and the
+database insert succeed. A Resend `Idempotency-Key` based on the application ID
+prevents duplicate notifications. Resend allows 40 MB per email after encoding;
+the 5 MB CV cap stays well inside it. If Resend rejects the attachment
+(`400`, `413` or `422`), the function retries once without the attachment and
+includes a seven-day signed download link instead, so the firm is still notified.
+
 ### 3. Connect the page
 
 Edit `assets/js/careers-config.js`:
@@ -325,8 +340,8 @@ In the Supabase dashboard:
   `rejected`, `hired`) and add private `internal_notes`. CSV export is available
   from the same screen.
 - **Storage → resumes** — files are stored under `YYYY/MM/<application-id>-<name>`.
-  The bucket is private; use the dashboard download button or the seven-day
-  signed link in the notification email.
+  The bucket is private; use the dashboard download button, the email attachment,
+  or the seven-day signed link in the notification email.
 
 Useful SQL:
 
@@ -354,8 +369,9 @@ order by created_at desc;
   applications per ten minutes.
 - **Spam and duplicates.** A hidden honeypot and a per-page `client_token`
   (unique in Postgres) stop bot traffic and accidental double inserts.
-- **Private notification links.** Resend receives a seven-day signed URL, not a
-  public file URL.
+- **Private notification attachments.** The CV travels as an email attachment,
+  not a public URL. The backup download link is a seven-day signed URL, and the
+  bucket itself stays private.
 - **No candidate data in the page.** The HTML contains no candidate records,
   keys or resume paths.
 
@@ -364,11 +380,40 @@ order by created_at desc;
 If `submitEndpoint` is empty, the page shows a clear notice and changes the
 button to **Continue by email**. The form still validates every field, then
 offers a pre-filled `mailto:` with all the answers plus a **Copy application
-details** button. The candidate must attach the CV before sending. The success
-message is only shown after the Edge Function returns a real `2xx`; the site
-never fakes a submission.
+details** button. Browsers cannot attach a file to a `mailto:` link, so the
+candidate must attach the CV in their email app before sending; the page says so
+explicitly. The success message is only shown after the Edge Function returns a
+real `2xx`; the site never fakes a submission.
 
-### 7. Privacy and retention
+### 7. Test the upload and attachment
+
+With the endpoint and `RESEND_API_KEY` configured, submit one application for
+each file type and confirm the received email:
+
+1. **PDF** — the attachment opens in a PDF reader and matches the uploaded file.
+2. **DOC** — the original Word 97–2003 file arrives unchanged.
+3. **DOCX** — the original Word file arrives unchanged.
+4. **Over 5 MB** — rejected in the browser before any request; the form is not
+   submitted and no email is sent.
+5. **Unsupported type** (for example `.exe` renamed to `.pdf`) — rejected by the
+   extension check or the PDF/DOC/DOCX signature check on both client and server.
+
+Also check the failure path: temporarily revoke storage access and submit. The
+form should show “We couldn't upload your resume to secure storage, so your
+application was not submitted”, keep every answer, and send no email.
+
+The attachment payload itself can be verified without sending mail:
+
+```powershell
+deno test --allow-env supabase/functions/submit-application/index_test.ts
+```
+
+The test Base64-encodes sample PDF, DOC and DOCX bytes, decodes the Resend
+payload and checks that it matches the uploaded file exactly, including the
+filename, MIME type and idempotency key. It also checks the signed-link fallback
+when Resend rejects an attachment.
+
+### 8. Privacy and retention
 
 The declaration records consent to processing for recruitment. Before go-live,
 add a privacy note covering who can access applications, how long they are kept

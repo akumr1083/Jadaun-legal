@@ -2312,6 +2312,10 @@ main section[id],
   font-size: 0.7rem;
   line-height: 1.5;
 }
+.af-hint.is-ok {
+  color: var(--brass-2);
+  font-weight: 500;
+}
 
 .af-upload {
   position: relative;
@@ -2726,9 +2730,16 @@ main section[id],
   .application__card { padding: 22px 16px; }
   .roles__head { align-items: flex-start; }
   .appform__actions .btn { width: 100%; }
-  .af-file { flex-wrap: wrap; }
-  .af-file__btn { margin-left: 0; }
-  .af-file__remove { margin-left: auto; }
+  .af-file {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 12px;
+  }
+  .af-file__icon { grid-column: 1; grid-row: 1; }
+  .af-file__meta { grid-column: 2 / -1; grid-row: 1; }
+  .af-file__btn { grid-column: 2; grid-row: 2; margin-left: 0; justify-self: start; }
+  .af-file__remove { grid-column: 3; grid-row: 2; margin-left: 0; }
   .steps { grid-template-columns: minmax(0, 1fr); }
   .step,
   .step:nth-child(2n),

@@ -14,9 +14,16 @@
 //   RATE_LIMIT_SALT         optional, used to hash visitor IPs
 //
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided automatically.
+//
+// Flow: validate → upload CV to the private bucket → insert the row →
+// email the firm with the CV attached. The email is only sent after the
+// upload and insert succeed, and the Resend idempotency key prevents a
+// duplicate notification. If Resend rejects the attachment, the same
+// email is retried once with a seven-day signed download link instead.
 // =========================================================
 
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { notifyFirm } from "./email.ts";
 
 const POSITIONS = new Set([
   "Internship",
@@ -29,6 +36,7 @@ const POSITIONS = new Set([
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const MAX_PER_IP_PER_10_MIN = 5;
+
 const BUCKET = Deno.env.get("RESUME_BUCKET") || "resumes";
 
 const CORS = {
@@ -47,19 +55,6 @@ function json(body: unknown, status = 200): Response {
 
 function text(value: FormDataEntryValue | null, max = 5000): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
-}
-
-function escapeHtml(value: unknown): string {
-  return String(value ?? "").replace(/[&<>"']/g, (character) => {
-    const map: Record<string, string> = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    };
-    return map[character] || character;
-  });
 }
 
 function mimeForExtension(extension: string): string {
@@ -82,7 +77,7 @@ async function hashIp(ip: string): Promise<string> {
     .join("");
 }
 
-Deno.serve(async (request: Request) => {
+async function handleRequest(request: Request): Promise<Response> {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: CORS });
   }
@@ -175,7 +170,28 @@ Deno.serve(async (request: Request) => {
     return json({ ok: false, error: "Please upload a PDF, DOC or DOCX file." }, 400);
   }
 
-  const head = new Uint8Array(await resume.slice(0, 8).arrayBuffer());
+  // Read the file once. The same bytes are signature-checked, uploaded to
+  // storage and Base64-encoded for the email attachment, so the attachment
+  // is always the exact document the candidate selected.
+  let resumeBytes: Uint8Array;
+  try {
+    resumeBytes = new Uint8Array(await resume.arrayBuffer());
+  } catch (error) {
+    console.error("Could not read uploaded resume", error);
+    return json(
+      { ok: false, error: "We couldn't read your resume. Please try again." },
+      400
+    );
+  }
+
+  if (resumeBytes.byteLength === 0) {
+    return json({ ok: false, error: "Your resume file is empty." }, 400);
+  }
+  if (resumeBytes.byteLength > MAX_BYTES) {
+    return json({ ok: false, error: "Your resume must be 5 MB or smaller." }, 400);
+  }
+
+  const head = resumeBytes.subarray(0, 8);
   const magicOk =
     (extension === "pdf" && hasMagic(head, [0x25, 0x50, 0x44, 0x46])) ||
     (extension === "docx" && hasMagic(head, [0x50, 0x4b, 0x03, 0x04])) ||
@@ -189,6 +205,7 @@ Deno.serve(async (request: Request) => {
     );
   }
 
+  const resumeType = mimeForExtension(extension);
   const forwarded = request.headers.get("x-forwarded-for") || "";
   const ip =
     forwarded.split(",")[0].trim() ||
@@ -221,16 +238,20 @@ Deno.serve(async (request: Request) => {
 
   const { error: uploadError } = await supabase.storage
     .from(BUCKET)
-    .upload(path, resume, {
-      contentType: mimeForExtension(extension),
+    .upload(path, resumeBytes, {
+      contentType: resumeType,
       upsert: false,
     });
 
   if (uploadError) {
     console.error("Resume upload failed", uploadError);
     return json(
-      { ok: false, error: "We couldn't store your resume. Please try again." },
-      500
+      {
+        ok: false,
+        error:
+          "We couldn't upload your resume to secure storage, so your application was not submitted. Please try again.",
+      },
+      502
     );
   }
 
@@ -253,8 +274,8 @@ Deno.serve(async (request: Request) => {
       notice_period: noticePeriod || null,
       resume_path: path,
       resume_name: resume.name.slice(0, 255),
-      resume_type: mimeForExtension(extension),
-      resume_size: resume.size,
+      resume_type: resumeType,
+      resume_size: resumeBytes.byteLength,
       source,
       ip_hash: ipHash,
       user_agent: (request.headers.get("user-agent") || "").slice(0, 500),
@@ -281,6 +302,8 @@ Deno.serve(async (request: Request) => {
   }
 
   // Email notification is best-effort: the application is already stored.
+  // notifyFirm attaches the CV; if Resend rejects it, it retries with a
+  // private signed link so the firm is still notified exactly once.
   try {
     await notifyFirm(supabase, {
       id: data.id,
@@ -300,129 +323,15 @@ Deno.serve(async (request: Request) => {
       noticePeriod,
       resumeName: resume.name,
       resumePath: path,
+      resumeType,
+      resumeSize: resumeBytes.byteLength,
+      resumeBytes,
     });
   } catch (notificationError) {
     console.error("Notification failed", notificationError);
   }
 
   return json({ ok: true, id: data.id });
-});
-
-type ApplicationSummary = {
-  id: string;
-  createdAt: string;
-  fullName: string;
-  email: string;
-  mobile: string;
-  city: string;
-  position: string;
-  qualification: string;
-  college: string;
-  graduationYear: string;
-  experience: string;
-  currentOrganization: string;
-  coverLetter: string;
-  skills: string;
-  noticePeriod: string;
-  resumeName: string;
-  resumePath: string;
-};
-
-async function notifyFirm(
-  supabase: SupabaseClient,
-  application: ApplicationSummary
-): Promise<void> {
-  const apiKey = Deno.env.get("RESEND_API_KEY");
-  const to = Deno.env.get("CAREERS_NOTIFY_EMAIL");
-
-  if (!apiKey || !to) {
-    console.info(
-      "RESEND_API_KEY or CAREERS_NOTIFY_EMAIL is not set — application stored without email notification."
-    );
-    return;
-  }
-
-  const from =
-    Deno.env.get("CAREERS_FROM_EMAIL") ||
-    "Jadaun Legal Careers <onboarding@resend.dev>";
-
-  const { data: signed } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(application.resumePath, 60 * 60 * 24 * 7);
-
-  const rows: Array<[string, string]> = [
-    ["Position", application.position],
-    ["Full name", application.fullName],
-    ["Email", application.email],
-    ["Mobile", application.mobile],
-    ["Current city", application.city],
-    ["Highest qualification", application.qualification],
-    ["College / university", application.college || "—"],
-    ["Year of graduation", application.graduationYear || "—"],
-    ["Work experience", application.experience || "—"],
-    ["Current organization", application.currentOrganization || "—"],
-    ["Notice period / availability", application.noticePeriod || "—"],
-    ["Resume", application.resumeName],
-    ["Application ID", application.id],
-    ["Received", application.createdAt],
-  ];
-
-  const details = rows
-    .map(
-      ([label, value]) =>
-        `<tr><td style="padding:6px 14px 6px 0;color:#75685a;vertical-align:top;">${escapeHtml(
-          label
-        )}</td><td style="padding:6px 0;color:#302820;">${escapeHtml(value)}</td></tr>`
-    )
-    .join("");
-
-  const html = `
-    <div style="font-family:Inter,Arial,sans-serif;color:#302820;line-height:1.6;max-width:720px;">
-      <p style="margin:0 0 6px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#b08d57;">Jadaun Legal · Careers</p>
-      <h1 style="margin:0 0 4px;font-size:24px;font-weight:500;">New application — ${escapeHtml(
-        application.position
-      )}</h1>
-      <p style="margin:0 0 22px;color:#75685a;">${escapeHtml(
-        application.fullName
-      )} applied through the website.</p>
-      <table style="border-collapse:collapse;font-size:14px;">${details}</table>
-      <h2 style="margin:24px 0 8px;font-size:16px;font-weight:600;">Cover letter / introduction</h2>
-      <p style="margin:0 0 18px;white-space:pre-wrap;color:#5b4f43;">${escapeHtml(
-        application.coverLetter || "—"
-      )}</p>
-      <h2 style="margin:0 0 8px;font-size:16px;font-weight:600;">Skills and expertise</h2>
-      <p style="margin:0 0 22px;white-space:pre-wrap;color:#5b4f43;">${escapeHtml(
-        application.skills || "—"
-      )}</p>
-      ${
-        signed && signed.signedUrl
-          ? `<p style="margin:0 0 22px;"><a href="${escapeHtml(
-              signed.signedUrl
-            )}" style="display:inline-block;padding:11px 20px;border-radius:999px;background:#302820;color:#faf7f0;text-decoration:none;">Download resume</a><br><span style="font-size:12px;color:#75685a;">This private link expires in 7 days.</span></p>`
-          : `<p style="color:#75685a;">Open the private <strong>resumes</strong> bucket in Supabase Storage to download the CV.</p>`
-      }
-      <p style="margin:22px 0 0;padding-top:16px;border-top:1px solid #d8cbb8;font-size:12px;color:#75685a;">
-        Review and update the application in Supabase → Table Editor → job_applications.
-      </p>
-    </div>
-  `;
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject: `New application — ${application.position} — ${application.fullName}`,
-      html,
-      reply_to: application.email,
-    }),
-  });
-
-  if (!response.ok) {
-    console.error("Resend error", response.status, await response.text());
-  }
 }
+
+Deno.serve(handleRequest);

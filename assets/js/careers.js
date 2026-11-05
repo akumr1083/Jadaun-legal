@@ -37,6 +37,11 @@
     "Steno/Typist",
   ];
   const ALLOWED_EXT = ["pdf", "doc", "docx"];
+  const MAGIC_BYTES = {
+    pdf: [0x25, 0x50, 0x44, 0x46],
+    docx: [0x50, 0x4b, 0x03, 0x04],
+    doc: [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1],
+  };
   const ERROR_IDS = {
     full_name: "fullName-error",
     email: "email-error",
@@ -71,6 +76,7 @@
 
   let selectedFile = null;
   let submitting = false;
+  let validating = false;
   let lastSummary = "";
 
   /* ---------- validation ---------- */
@@ -127,9 +133,13 @@
     },
   };
 
-  function validateFile(file) {
+  function fileExtension(file) {
+    return String(file && file.name ? file.name : "").split(".").pop().toLowerCase();
+  }
+
+  function validateFileMeta(file) {
     if (!file) return "Please attach your resume (PDF, DOC or DOCX).";
-    const extension = String(file.name || "").split(".").pop().toLowerCase();
+    const extension = fileExtension(file);
     if (ALLOWED_EXT.indexOf(extension) === -1) {
       return "Please upload a PDF, DOC or DOCX file.";
     }
@@ -140,6 +150,22 @@
       return "That file appears to be empty. Please choose another.";
     }
     return "";
+  }
+
+  // Check the first bytes so a renamed executable cannot pose as a CV.
+  // This mirrors the signature check in the Edge Function.
+  async function matchesFileSignature(file) {
+    const signature = MAGIC_BYTES[fileExtension(file)];
+    if (!signature) return false;
+
+    try {
+      const head = new Uint8Array(await file.slice(0, signature.length).arrayBuffer());
+      return signature.every(function (byte, index) {
+        return head[index] === byte;
+      });
+    } catch (error) {
+      return false;
+    }
   }
 
   function setError(name, message) {
@@ -169,7 +195,7 @@
     Object.keys(ERROR_IDS).forEach(clearError);
   }
 
-  function validateAll() {
+  async function validateAll() {
     let firstInvalid = null;
 
     ["full_name", "email", "mobile", "city", "position", "qualification", "graduation_year"].forEach(
@@ -182,7 +208,13 @@
       }
     );
 
-    const resumeMessage = validateFile(selectedFile);
+    let resumeMessage = validateFileMeta(selectedFile);
+    if (!resumeMessage && selectedFile && !(await matchesFileSignature(selectedFile))) {
+      resumeMessage =
+        "That file does not appear to be a valid " +
+        fileExtension(selectedFile).toUpperCase() +
+        " document. Please upload the original file.";
+    }
     setError("resume", resumeMessage);
     if (resumeMessage && !firstInvalid) firstInvalid = fileInput;
 
@@ -277,8 +309,9 @@
       }
       if (fileTitle) fileTitle.textContent = "Click to replace your CV";
       if (fileHelp) {
+        fileHelp.classList.add("is-ok");
         fileHelp.textContent =
-          "Attached: " +
+          "✓ Resume attached successfully — " +
           selectedFile.name +
           " (" +
           formatBytes(selectedFile.size) +
@@ -291,25 +324,47 @@
         fileTitle.innerHTML = "Drop your CV here or <span>browse</span>";
       }
       if (fileHelp) {
+        fileHelp.classList.remove("is-ok");
         fileHelp.textContent =
           "Accepted formats: PDF, DOC or DOCX. Maximum file size: " + maxMB + " MB.";
       }
     }
   }
 
-  function handleFile(file) {
+  let fileCheck = 0;
+
+  async function handleFile(file) {
+    const check = ++fileCheck;
+
     if (!file) {
       selectedFile = null;
       renderFile();
       return;
     }
 
-    const message = validateFile(file);
-    if (message) {
+    const metaMessage = validateFileMeta(file);
+    if (metaMessage) {
       selectedFile = null;
       if (fileInput) fileInput.value = "";
       renderFile();
-      setError("resume", message);
+      setError("resume", metaMessage);
+      focusInvalid(fileInput);
+      return;
+    }
+
+    const signatureOk = await matchesFileSignature(file);
+    if (check !== fileCheck) return;
+
+    if (!signatureOk) {
+      selectedFile = null;
+      if (fileInput) fileInput.value = "";
+      renderFile();
+      setError(
+        "resume",
+        "That file does not appear to be a valid " +
+          fileExtension(file).toUpperCase() +
+          " document. Please upload the original file."
+      );
       focusInvalid(fileInput);
       return;
     }
@@ -436,7 +491,7 @@
       encodeURIComponent(lastSummary);
 
     setStatus(
-      "Your application is ready to send by email. Open your email app, attach your CV, and press Send. If nothing opens, copy the details and paste them into an email to " +
+      "Your application is ready to send by email. Your email app will open with all your details filled in, but it cannot attach files — attach your CV before pressing Send. If nothing opens, copy the details and paste them into an email to " +
         contactEmail +
         ".",
       "notice",
@@ -501,7 +556,12 @@
 
   async function submitOnline() {
     setLoading(true);
-    setStatus("Submitting your application…", "notice");
+    setStatus(
+      selectedFile
+        ? "Uploading your resume and submitting your application…"
+        : "Submitting your application…",
+      "notice"
+    );
 
     const data = new FormData();
     [
@@ -557,17 +617,34 @@
       });
 
       if (!response.ok || result.ok === false) {
-        throw new Error(result.error || "Submission failed");
+        const serverMessage =
+          typeof result.error === "string" ? result.error.trim() : "";
+        const failure = new Error(serverMessage || "Submission failed");
+        failure.status = response.status;
+        failure.serverMessage = serverMessage;
+        throw failure;
       }
 
       showSuccess();
     } catch (error) {
-      const message =
-        error && error.name === "AbortError"
-          ? "The submission took too long. Please check your connection and try again."
-          : "We couldn't submit your application just now. Please try again in a moment, or send your details by email to " +
-            contactEmail +
-            ". Your form has not been cleared.";
+      let message;
+
+      if (error && error.name === "AbortError") {
+        message =
+          "The submission took too long. Please check your connection and try again.";
+      } else if (error && error.status === 413) {
+        message =
+          "Your application is too large to send. Please attach a resume of " +
+          maxMB +
+          " MB or smaller and try again. Your form has not been cleared.";
+      } else if (error && error.serverMessage) {
+        message = error.serverMessage + " Your form has not been cleared.";
+      } else {
+        message =
+          "We couldn't submit your application just now. Please try again in a moment, or send your details by email to " +
+          contactEmail +
+          ". Your form has not been cleared.";
+      }
 
       const subject = "Application — " + getValue("position") + " — " + getValue("full_name");
       setStatus(message, "error", {
@@ -578,6 +655,30 @@
           encodeURIComponent(subject),
         linkLabel: "Email your CV instead",
       });
+
+      // Point at the upload field when the server rejected the file itself.
+      if (
+        error &&
+        error.serverMessage &&
+        /resume|\bcv\b|file|pdf|docx?/i.test(error.serverMessage)
+      ) {
+        setError("resume", error.serverMessage);
+
+        if (error.status === 400) {
+          // The server refused the file: clear it so the candidate must
+          // choose a valid PDF, DOC or DOCX before trying again.
+          selectedFile = null;
+          if (fileInput) fileInput.value = "";
+          renderFile();
+        } else if (fileHelp) {
+          // The file is still selected locally; only the upload failed.
+          fileHelp.classList.remove("is-ok");
+          fileHelp.textContent =
+            "Your resume is still selected — choose another file or try submitting again.";
+        }
+
+        focusInvalid(fileInput);
+      }
     } finally {
       window.clearTimeout(timer);
       setLoading(false);
@@ -596,14 +697,21 @@
     if (name && ERROR_IDS[name] && name !== "resume") clearError(name);
   });
 
-  form.addEventListener("submit", function (event) {
+  form.addEventListener("submit", async function (event) {
     event.preventDefault();
-    if (submitting) return;
+    if (submitting || validating) return;
 
     const honeypot = field("company_website");
     if (honeypot && clean(honeypot.value)) return;
 
-    const firstInvalid = validateAll();
+    validating = true;
+    let firstInvalid = null;
+    try {
+      firstInvalid = await validateAll();
+    } finally {
+      validating = false;
+    }
+
     if (firstInvalid) {
       setStatus("Please check the highlighted fields and try again.", "error");
       focusInvalid(firstInvalid);
