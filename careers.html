@@ -8,10 +8,23 @@
 <meta name="theme-color" content="#F5F0E6">
 <meta name="color-scheme" content="light">
 
+<link rel="canonical" href="https://www.jadaunlegal.com/careers.html">
+
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Jadaun Legal">
+<meta property="og:url" content="https://www.jadaunlegal.com/careers.html">
 <meta property="og:title" content="Careers — Build Your Career with Jadaun Legal">
 <meta property="og:description" content="Build your career with Jadaun Legal. Explore open legal and administrative roles and apply online.">
 <meta property="og:locale" content="en_IN">
+<meta property="og:image" content="https://www.jadaunlegal.com/assets/img/supreme-court-hero.jpg">
+<meta property="og:image:width" content="1325">
+<meta property="og:image:height" content="1187">
+<meta property="og:image:alt" content="The Supreme Court of India">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Careers — Build Your Career with Jadaun Legal">
+<meta name="twitter:description" content="Explore open legal and administrative roles and apply online.">
+<meta name="twitter:image" content="https://www.jadaunlegal.com/assets/img/supreme-court-hero.jpg">
 
 <link rel="icon" type="image/png" sizes="256x256" href="assets/img/favicon.png">
 <link rel="apple-touch-icon" href="assets/img/favicon.png">
@@ -368,14 +381,13 @@
           </noscript>
 
           <div class="appform__notice" id="applicationNotice" hidden>
-            <strong>Online applications are not connected yet.</strong>
+            <strong>Your application is sent by email.</strong>
             <p>
-              The secure application database is awaiting configuration, so this form
-              cannot store submissions automatically. You can still send your details by
-              email: choose <strong>Continue by email</strong> below, or write to
-              <a href="mailto:advabhaysingh07@gmail.com">advabhaysingh07@gmail.com</a>
-              and attach your CV. Email apps cannot attach files automatically, so please
-              attach your resume before sending.
+              When you submit, your email app opens with all your details filled in.
+              Attach your CV (PDF, DOC or DOCX) to that email before sending it to
+              <a href="mailto:advabhaysingh07@gmail.com">advabhaysingh07@gmail.com</a>.
+              If you have a resume link, add it in the form and it will be included in
+              the email.
             </p>
           </div>
 
@@ -527,49 +539,23 @@
           <fieldset class="af-set">
             <legend>
               <span class="af-legend">
-                <span class="af-set__n">04</span> Document upload
+                <span class="af-set__n">04</span> Resume / CV
                 <span class="af-set__line" aria-hidden="true"></span>
               </span>
             </legend>
 
             <div class="af-field af-field--full">
-              <span class="af-label" id="resumeLabel">Resume / CV <span class="af-req" aria-hidden="true">*</span></span>
-              <label class="af-upload" id="resumeDrop" for="resume">
-                <input class="af-upload__input" id="resume" name="resume" type="file"
-                       accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                       required aria-required="true" aria-labelledby="resumeLabel"
-                       aria-describedby="resume-help resume-error">
-                <span class="af-upload__body" aria-hidden="true">
-                  <svg class="af-upload__icon" viewBox="0 0 24 24">
-                    <path d="M12 16V4m0 0L7 9m5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"
-                          fill="none" stroke="currentColor" stroke-width="1.4"
-                          stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span class="af-upload__title" id="resumeTitle">Drop your CV here or <span>browse</span></span>
-                  <span class="af-upload__meta">PDF, DOC or DOCX · maximum 5 MB</span>
-                </span>
-              </label>
-
-              <div class="af-file" id="resumeFile" hidden>
-                <svg class="af-file__icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7l-4-4Z"
-                        fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-                  <path d="M14 3v4h4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-                </svg>
-                <span class="af-file__meta">
-                  <strong id="resumeFileName"></strong>
-                  <span id="resumeFileSize"></span>
-                </span>
-                <button type="button" class="af-file__btn" id="resumeReplace">Replace</button>
-                <button type="button" class="af-file__remove" id="resumeRemove" aria-label="Remove resume">
-                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
-                </button>
-              </div>
-
+              <label for="resumeLink">Link to your resume / CV</label>
+              <input id="resumeLink" name="resume_link" type="url" inputmode="url"
+                     autocomplete="url" placeholder="https://drive.google.com/…"
+                     aria-describedby="resume-help resumeLink-error">
               <p class="af-hint" id="resume-help">
-                Accepted formats: PDF, DOC or DOCX. Maximum file size: 5 MB.
+                Paste a shareable link to your CV — Google Drive, Dropbox, OneDrive or a
+                portfolio page. Set sharing to <strong>“Anyone with the link”</strong> so the
+                firm can open it. No link? Leave this blank and attach your CV (PDF, DOC or
+                DOCX) to the email that opens when you submit.
               </p>
-              <p class="af-error" id="resume-error" hidden></p>
+              <p class="af-error" id="resumeLink-error" hidden></p>
             </div>
           </fieldset>
 
@@ -611,8 +597,8 @@
               <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M12 4H6M12 4v6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
             </button>
             <p class="appform__privacy">
-              Your details and CV are stored securely and used only for recruitment.
-              Candidate information and resumes are never published.
+              Your details are used only for recruitment and are never published. If you
+              add a resume link, make sure it is accessible to the firm.
             </p>
           </div>
 
@@ -700,6 +686,6 @@
 
 <script src="assets/js/app.js?v=20261104b" defer></script>
 <script src="assets/js/careers-config.js?v=20261104c" defer></script>
-<script src="assets/js/careers.js?v=20261105a" defer></script>
+<script src="assets/js/careers.js?v=20261106a" defer></script>
 </body>
 </html>

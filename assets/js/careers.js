@@ -24,8 +24,6 @@
   const configured =
     /^https?:\/\//i.test(endpoint) && !/YOUR|PLACEHOLDER|EXAMPLE/i.test(endpoint);
   const contactEmail = clean(cfg.contactEmail) || "advabhaysingh07@gmail.com";
-  const maxMB = Number(cfg.maxResumeMB) > 0 ? Number(cfg.maxResumeMB) : 5;
-  const maxBytes = maxMB * 1024 * 1024;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const POSITIONS = [
@@ -36,12 +34,6 @@
     "Administrator",
     "Steno/Typist",
   ];
-  const ALLOWED_EXT = ["pdf", "doc", "docx"];
-  const MAGIC_BYTES = {
-    pdf: [0x25, 0x50, 0x44, 0x46],
-    docx: [0x50, 0x4b, 0x03, 0x04],
-    doc: [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1],
-  };
   const ERROR_IDS = {
     full_name: "fullName-error",
     email: "email-error",
@@ -50,7 +42,7 @@
     position: "position-error",
     qualification: "qualification-error",
     graduation_year: "graduationYear-error",
-    resume: "resume-error",
+    resume_link: "resumeLink-error",
     declaration: "declaration-error",
   };
 
@@ -65,16 +57,6 @@
   const successPanel = document.getElementById("applicationSuccess");
   const tokenInput = document.getElementById("clientToken");
 
-  const fileInput = document.getElementById("resume");
-  const drop = document.getElementById("resumeDrop");
-  const fileCard = document.getElementById("resumeFile");
-  const fileNameEl = document.getElementById("resumeFileName");
-  const fileSizeEl = document.getElementById("resumeFileSize");
-  const fileTitle = document.getElementById("resumeTitle");
-  const fileHelp = document.getElementById("resume-help");
-  const fileMeta = drop ? drop.querySelector(".af-upload__meta") : null;
-
-  let selectedFile = null;
   let submitting = false;
   let validating = false;
   let lastSummary = "";
@@ -133,41 +115,6 @@
     },
   };
 
-  function fileExtension(file) {
-    return String(file && file.name ? file.name : "").split(".").pop().toLowerCase();
-  }
-
-  function validateFileMeta(file) {
-    if (!file) return "Please attach your resume (PDF, DOC or DOCX).";
-    const extension = fileExtension(file);
-    if (ALLOWED_EXT.indexOf(extension) === -1) {
-      return "Please upload a PDF, DOC or DOCX file.";
-    }
-    if (file.size > maxBytes) {
-      return "Your resume must be " + maxMB + " MB or smaller.";
-    }
-    if (file.size === 0) {
-      return "That file appears to be empty. Please choose another.";
-    }
-    return "";
-  }
-
-  // Check the first bytes so a renamed executable cannot pose as a CV.
-  // This mirrors the signature check in the Edge Function.
-  async function matchesFileSignature(file) {
-    const signature = MAGIC_BYTES[fileExtension(file)];
-    if (!signature) return false;
-
-    try {
-      const head = new Uint8Array(await file.slice(0, signature.length).arrayBuffer());
-      return signature.every(function (byte, index) {
-        return head[index] === byte;
-      });
-    } catch (error) {
-      return false;
-    }
-  }
-
   function setError(name, message) {
     const el = field(name);
     if (!el) return;
@@ -182,9 +129,6 @@
     el.setAttribute("aria-invalid", message ? "true" : "false");
 
     if (wrap) wrap.classList.toggle("is-invalid", Boolean(message));
-    if (name === "resume" && drop) {
-      drop.classList.toggle("is-invalid", Boolean(message));
-    }
   }
 
   function clearError(name) {
@@ -208,15 +152,14 @@
       }
     );
 
-    let resumeMessage = validateFileMeta(selectedFile);
-    if (!resumeMessage && selectedFile && !(await matchesFileSignature(selectedFile))) {
-      resumeMessage =
-        "That file does not appear to be a valid " +
-        fileExtension(selectedFile).toUpperCase() +
-        " document. Please upload the original file.";
-    }
-    setError("resume", resumeMessage);
-    if (resumeMessage && !firstInvalid) firstInvalid = fileInput;
+    const linkEl = field("resume_link");
+    const linkValue = linkEl ? clean(linkEl.value) : "";
+    const linkMessage =
+      linkValue && !/^https?:\/\/\S+$/i.test(linkValue)
+        ? "Please paste a full link starting with http:// or https://, or leave it blank."
+        : "";
+    setError("resume_link", linkMessage);
+    if (linkMessage && !firstInvalid) firstInvalid = linkEl;
 
     const declaration = field("declaration");
     const declarationMessage =
@@ -286,154 +229,6 @@
     form.setAttribute("aria-busy", loading ? "true" : "false");
   }
 
-  /* ---------- resume ---------- */
-
-  function formatBytes(bytes) {
-    if (!bytes) return "0 B";
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-  }
-
-  function renderFile() {
-    const hasFile = Boolean(selectedFile);
-
-    if (fileCard) fileCard.hidden = !hasFile;
-    if (drop) drop.classList.toggle("has-file", hasFile);
-
-    if (hasFile) {
-      if (fileNameEl) fileNameEl.textContent = selectedFile.name;
-      if (fileSizeEl) {
-        const extension = String(selectedFile.name).split(".").pop().toUpperCase();
-        fileSizeEl.textContent = formatBytes(selectedFile.size) + " · " + extension;
-      }
-      if (fileTitle) fileTitle.textContent = "Click to replace your CV";
-      if (fileHelp) {
-        fileHelp.classList.add("is-ok");
-        fileHelp.textContent =
-          "✓ Resume attached successfully — " +
-          selectedFile.name +
-          " (" +
-          formatBytes(selectedFile.size) +
-          "). Choose another file to replace it.";
-      }
-    } else {
-      if (fileNameEl) fileNameEl.textContent = "";
-      if (fileSizeEl) fileSizeEl.textContent = "";
-      if (fileTitle) {
-        fileTitle.innerHTML = "Drop your CV here or <span>browse</span>";
-      }
-      if (fileHelp) {
-        fileHelp.classList.remove("is-ok");
-        fileHelp.textContent =
-          "Accepted formats: PDF, DOC or DOCX. Maximum file size: " + maxMB + " MB.";
-      }
-    }
-  }
-
-  let fileCheck = 0;
-
-  async function handleFile(file) {
-    const check = ++fileCheck;
-
-    if (!file) {
-      selectedFile = null;
-      renderFile();
-      return;
-    }
-
-    const metaMessage = validateFileMeta(file);
-    if (metaMessage) {
-      selectedFile = null;
-      if (fileInput) fileInput.value = "";
-      renderFile();
-      setError("resume", metaMessage);
-      focusInvalid(fileInput);
-      return;
-    }
-
-    const signatureOk = await matchesFileSignature(file);
-    if (check !== fileCheck) return;
-
-    if (!signatureOk) {
-      selectedFile = null;
-      if (fileInput) fileInput.value = "";
-      renderFile();
-      setError(
-        "resume",
-        "That file does not appear to be a valid " +
-          fileExtension(file).toUpperCase() +
-          " document. Please upload the original file."
-      );
-      focusInvalid(fileInput);
-      return;
-    }
-
-    selectedFile = file;
-    clearError("resume");
-    renderFile();
-  }
-
-  if (fileInput) {
-    fileInput.addEventListener("change", function () {
-      const file = fileInput.files && fileInput.files[0];
-      handleFile(file || null);
-    });
-  }
-
-  if (drop) {
-    ["dragenter", "dragover"].forEach(function (type) {
-      drop.addEventListener(type, function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        drop.classList.add("is-dragover");
-      });
-    });
-
-    ["dragleave", "drop"].forEach(function (type) {
-      drop.addEventListener(type, function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        drop.classList.remove("is-dragover");
-      });
-    });
-
-    drop.addEventListener("drop", function (event) {
-      const file =
-        event.dataTransfer && event.dataTransfer.files
-          ? event.dataTransfer.files[0]
-          : null;
-      if (!file) return;
-
-      try {
-        const transfer = new DataTransfer();
-        transfer.items.add(file);
-        if (fileInput) fileInput.files = transfer.files;
-      } catch (error) {
-        /* The File is still held in `selectedFile`. */
-      }
-
-      handleFile(file);
-    });
-  }
-
-  const replaceButton = document.getElementById("resumeReplace");
-  if (replaceButton && fileInput) {
-    replaceButton.addEventListener("click", function () {
-      fileInput.click();
-    });
-  }
-
-  const removeButton = document.getElementById("resumeRemove");
-  if (removeButton) {
-    removeButton.addEventListener("click", function () {
-      selectedFile = null;
-      if (fileInput) fileInput.value = "";
-      renderFile();
-      clearError("resume");
-    });
-  }
-
   /* ---------- email fallback ---------- */
 
   function getValue(name) {
@@ -473,9 +268,9 @@
       "DECLARATION",
       "I hereby declare that the information provided by me is accurate and complete to the best of my knowledge. I consent to Jadaun Legal processing my information for recruitment purposes.",
       "",
-      "Resume: " + (selectedFile ? selectedFile.name : "—"),
+      "Resume link: " + (getValue("resume_link") || "—"),
       "",
-      "Please attach your resume / CV to this email before sending.",
+      "Please attach your resume / CV (PDF, DOC or DOCX) to this email before sending.",
     ].join("\n");
   }
 
@@ -491,7 +286,7 @@
       encodeURIComponent(lastSummary);
 
     setStatus(
-      "Your application is ready to send by email. Your email app will open with all your details filled in, but it cannot attach files — attach your CV before pressing Send. If nothing opens, copy the details and paste them into an email to " +
+      "Your application is ready to send. Your email app will open with all your details filled in — attach your CV (PDF, DOC or DOCX) before pressing Send. If nothing opens, copy the details and email them to " +
         contactEmail +
         ".",
       "notice",
@@ -556,12 +351,7 @@
 
   async function submitOnline() {
     setLoading(true);
-    setStatus(
-      selectedFile
-        ? "Uploading your resume and submitting your application…"
-        : "Submitting your application…",
-      "notice"
-    );
+    setStatus("Submitting your application…", "notice");
 
     const data = new FormData();
     [
@@ -578,6 +368,7 @@
       "cover_letter",
       "skills",
       "notice_period",
+      "resume_link",
       "declaration",
       "client_token",
     ].forEach(function (name) {
@@ -591,7 +382,6 @@
     });
 
     data.append("source", "careers-page");
-    if (selectedFile) data.append("resume", selectedFile, selectedFile.name);
 
     const controller = new AbortController();
     const timer = window.setTimeout(function () {
@@ -634,9 +424,7 @@
           "The submission took too long. Please check your connection and try again.";
       } else if (error && error.status === 413) {
         message =
-          "Your application is too large to send. Please attach a resume of " +
-          maxMB +
-          " MB or smaller and try again. Your form has not been cleared.";
+          "Your application is too large to send. Please shorten the text and try again. Your form has not been cleared.";
       } else if (error && error.serverMessage) {
         message = error.serverMessage + " Your form has not been cleared.";
       } else {
@@ -655,30 +443,6 @@
           encodeURIComponent(subject),
         linkLabel: "Email your CV instead",
       });
-
-      // Point at the upload field when the server rejected the file itself.
-      if (
-        error &&
-        error.serverMessage &&
-        /resume|\bcv\b|file|pdf|docx?/i.test(error.serverMessage)
-      ) {
-        setError("resume", error.serverMessage);
-
-        if (error.status === 400) {
-          // The server refused the file: clear it so the candidate must
-          // choose a valid PDF, DOC or DOCX before trying again.
-          selectedFile = null;
-          if (fileInput) fileInput.value = "";
-          renderFile();
-        } else if (fileHelp) {
-          // The file is still selected locally; only the upload failed.
-          fileHelp.classList.remove("is-ok");
-          fileHelp.textContent =
-            "Your resume is still selected — choose another file or try submitting again.";
-        }
-
-        focusInvalid(fileInput);
-      }
     } finally {
       window.clearTimeout(timer);
       setLoading(false);
@@ -694,7 +458,7 @@
 
   form.addEventListener("change", function (event) {
     const name = event.target && event.target.name;
-    if (name && ERROR_IDS[name] && name !== "resume") clearError(name);
+    if (name && ERROR_IDS[name]) clearError(name);
   });
 
   form.addEventListener("submit", async function (event) {
@@ -749,9 +513,6 @@
         successPanel.hidden = true;
         form.hidden = false;
         form.reset();
-        selectedFile = null;
-        if (fileInput) fileInput.value = "";
-        renderFile();
         clearAllErrors();
         setStatus("", null);
         setToken();
@@ -792,18 +553,10 @@
   /* ---------- initial state ---------- */
 
   setToken();
-  renderFile();
 
   if (notice) notice.hidden = configured;
   if (submitLabel) {
     submitLabel.textContent = configured ? "Submit application" : "Continue by email";
-  }
-  if (fileHelp) {
-    fileHelp.textContent =
-      "Accepted formats: PDF, DOC or DOCX. Maximum file size: " + maxMB + " MB.";
-  }
-  if (fileMeta) {
-    fileMeta.textContent = "PDF, DOC or DOCX · maximum " + maxMB + " MB";
   }
 
   const yearInput = field("graduation_year");

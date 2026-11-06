@@ -45,8 +45,28 @@ on availability; Vercel shows it after deployment).
 ### After that
 
 Every push to `main` triggers a new production deployment. Pull requests get
-their own preview URLs. To use a custom domain, open **Project → Settings →
-Domains**, add the domain and point its DNS at Vercel.
+their own preview URLs.
+
+### Custom domain
+
+The site is live at **https://www.jadaunlegal.com**, with `jadaunlegal.com`
+redirecting to it. The domain is registered at Hostinger and uses Hostinger's
+DNS (`byte.dns-parking.com`, `pixel.dns-parking.com`); Vercel serves the site.
+
+Records at Hostinger:
+
+| Type | Name | Value | TTL |
+|---|---|---|---|
+| `A` | `@` | `216.198.79.1` | 300–3600 |
+| `CNAME` | `www` | `8cd0c4bf0be2b1ca.vercel-dns-017.com` | 300–3600 |
+
+Vercel shows the exact values under **Project → Settings → Domains** — use those
+if they ever change. Delete any leftover parking records first, and do not keep
+the legacy `76.76.21.21` / `cname.vercel-dns.com` pair alongside the current one.
+
+`www` is the primary domain and the apex redirects to it with a 308. To flip
+that, change the redirect direction in Vercel and update `canonical`, `og:url`
+and `sitemap.xml` to match.
 
 ### Notes
 
@@ -148,11 +168,11 @@ Images in `assets/img/`:
 
 ## Things to swap before publishing
 
-1. **Careers backend — Supabase endpoint** — the application form is complete, but
-   `assets/js/careers-config.js` still has an empty `submitEndpoint`. Until the
-   Supabase project in `supabase/` is deployed, the form validates the application
-   and offers a pre-filled email instead of pretending to save it. See *Careers
-   application portal* below.
+1. **Careers backend — optional** — the form currently collects an optional
+   resume link and opens a pre-filled email, asking the candidate to attach the
+   CV. That needs no backend. If the firm later wants applications stored in a
+   database, deploy the Supabase project in `supabase/` and set `submitEndpoint`
+   in `assets/js/careers-config.js`. See *Careers application portal* below.
 2. **Contact form — access key** — the form already posts to Web3Forms, but
    `index.html` still contains the placeholder `YOUR-WEB3FORMS-ACCESS-KEY`. Until
    a real key is pasted in, the form offers Gmail, Outlook or the visitor's
@@ -162,8 +182,11 @@ Images in `assets/img/`:
    same aspect ratio (4:5 for portraits) and keep the `width`/`height`
    attributes in `index.html` in sync. Faces sit high in frame; adjust
    `object-position` on `.plate__img` / `.person__photo img` if a crop is off.
-4. **Domain / canonical** — add a canonical URL and absolute `og:image` once the
-   site has a domain.
+4. **Domain / canonical** — done. The site is live at
+   `https://www.jadaunlegal.com` with canonical URLs, absolute `og:image`
+   metadata, `robots.txt` and `sitemap.xml`. If the primary domain ever changes,
+   update the `canonical`, `og:url`, `twitter:image` and `og:image` tags in all
+   three HTML files, plus `sitemap.xml` and `robots.txt`.
 5. **Legal pages** — `disclaimer.html` already covers the Bar Council of India
    no-solicitation rule, the absence of an advocate–client relationship, no
    guarantee of results and governing law. Have the firm review the wording, and
@@ -240,11 +263,21 @@ advertising rules also apply to how a practice presents itself online.
 ## Careers application portal
 
 `careers.html` contains the full application form: six positions, personal and
-professional details, a CV upload, the mandatory declaration and the exact
-success message requested by the firm. Validation, file handling and submission
-live in `assets/js/careers.js`.
+professional details, an optional resume link, the mandatory declaration and the
+exact success message requested by the firm. Validation and submission live in
+`assets/js/careers.js`.
 
-The form is wired for a **Supabase** backend:
+**Default flow (no backend).** The candidate can paste a shareable link to their
+CV (Google Drive, Dropbox, OneDrive or a portfolio page). On submit, the browser
+opens a pre-filled email with every field, including the link, and asks the
+candidate to attach the CV before sending. Nothing is stored on the site — the
+application arrives in `advabhaysingh07@gmail.com`.
+
+**Optional upgrade — Supabase.** The repository also contains a complete
+Supabase backend that stores applications and CVs and emails the firm with the
+file attached. Deploy it and set `submitEndpoint` in `careers-config.js` to
+switch the form from email to online submission. The rest of this section
+describes that setup.
 
 ```
 careers.html
