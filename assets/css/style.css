@@ -739,7 +739,6 @@ main section[id],
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: var(--ink-3);
-  writing-mode: vertical-rl;
 }
 .hero__ord--num {
   font-family: var(--serif);

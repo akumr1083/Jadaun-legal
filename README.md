@@ -279,6 +279,12 @@ file attached. Deploy it and set `submitEndpoint` in `careers-config.js` to
 switch the form from email to online submission. The rest of this section
 describes that setup.
 
+> **Before enabling the endpoint:** the current `careers.html` collects a resume
+> *link* only. The Edge Function requires a `resume` file upload, so add the file
+> input and append it to the `FormData` in `careers.js` (the drag-and-drop styles
+> are already in `style.css`) before setting `submitEndpoint`. Otherwise every
+> online submission is rejected with “Please attach your resume.”
+
 ```
 careers.html
   └─ careers.js  ──POST multipart──▶  Supabase Edge Function
