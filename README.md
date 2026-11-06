@@ -14,7 +14,7 @@ The site is plain static HTML with no build step. Serve it over HTTP so the
 relative paths and the consent gate behave exactly as they do in production:
 
 ```powershell
-cd "C:\Users\acer\OneDrive\Desktop\Jadaun-legal"
+cd "C:\Users\AKSHAY\Desktop\Jadaun-legal"
 python -m http.server 4173
 ```
 
@@ -90,7 +90,7 @@ disclaimer.html         website terms and Bar Council disclaimer
 assets/css/style.css    design system, layout, responsive rules
 assets/js/flag.js       animated tricolour canvas over the hero artwork
 assets/js/app.js        nav, reveals, tilt, cursor, enquiry form, progress
-assets/js/careers.js    application validation, resume UX, submission
+assets/js/careers.js    application validation, email fallback, submission
 assets/js/careers-config.js  Supabase endpoint + fallback contact email
 supabase/schema.sql     application table, RLS and private resume bucket
 supabase/functions/submit-application/index.ts  upload, insert, attach CV, notify
@@ -183,10 +183,10 @@ Images in `assets/img/`:
    attributes in `index.html` in sync. Faces sit high in frame; adjust
    `object-position` on `.plate__img` / `.person__photo img` if a crop is off.
 4. **Domain / canonical** — done. The site is live at
-   `https://www.jadaunlegal.com` with canonical URLs, absolute `og:image`
-   metadata, `robots.txt` and `sitemap.xml`. If the primary domain ever changes,
-   update the `canonical`, `og:url`, `twitter:image` and `og:image` tags in all
-   three HTML files, plus `sitemap.xml` and `robots.txt`.
+   `https://www.jadaunlegal.com` with canonical URLs and absolute `og:image`
+   metadata. `robots.txt` and `sitemap.xml` are not in this repository yet.
+   If the primary domain ever changes, update the `canonical`, `og:url`,
+   `twitter:image` and `og:image` tags in all three HTML files.
 5. **Legal pages** — `disclaimer.html` already covers the Bar Council of India
    no-solicitation rule, the absence of an advocate–client relationship, no
    guarantee of results and governing law. Have the firm review the wording, and
